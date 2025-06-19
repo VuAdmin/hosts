@@ -1,0 +1,36 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'  # 例如 v1.0.0 才会触发
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: '1.22'
+
+      - name: Build Linux static binary
+        run: |
+          mkdir dist
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o dist/hosts-manager hosts-manager.go
+
+      - name: Archive release
+        run: |
+          cd dist
+          tar -czvf hosts-manager-linux-amd64.tar.gz hosts-manager
+
+      - name: Upload release to GitHub
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/hosts-manager-linux-amd64.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
